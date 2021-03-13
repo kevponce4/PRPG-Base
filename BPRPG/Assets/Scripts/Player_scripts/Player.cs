@@ -4,6 +4,24 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+
+    #region attack_vars
+    [SerializeField]
+    [Tooltip("the time untill the hitbox is created")]
+    private float hitboxtiming;
+    private float attack_timer;
+    [SerializeField]
+    [Tooltip("amount of damage basic attack deals to enemy")]
+    private int dmg;
+    #endregion
+
+    #region UI/Health_vars
+    [SerializeField]
+    [Tooltip("maximum health player can have")]
+    private int max_health;
+    private int curr_health;
+    #endregion
+
     #region Unity_vars
     private Rigidbody2D PlayerRB;
     #endregion
@@ -23,6 +41,7 @@ public class Player : MonoBehaviour
     [Tooltip("How long we want to be jumping")]
     private float jump_len;
     private float vert_vel;
+    private Vector2 cur_direction;
 
     #endregion
 
@@ -32,6 +51,8 @@ public class Player : MonoBehaviour
     {
         PlayerRB = GetComponent<Rigidbody2D>();
         vert_vel = 0;
+        curr_health = max_health;
+        attack_timer = 0f;
     }
 
     // Update is called once per frame
@@ -40,6 +61,13 @@ public class Player : MonoBehaviour
         x_input = Input.GetAxisRaw("Horizontal");
         y_input = Input.GetAxisRaw("Vertical");
         move();
+        if( attack_timer<= 0  && ( Input.GetKeyDown("i") || Input.GetKeyDown("z")))
+        {
+            StartCoroutine(Attack());
+        } else if (attack_timer > 0)
+        {
+            attack_timer -= Time.deltaTime;
+        }
     }
     #endregion
 
@@ -54,6 +82,7 @@ public class Player : MonoBehaviour
         }
         if(x_input != 0)
         {
+            cur_direction = new Vector2(x_input / x_input, 0);
             PlayerRB.velocity = new Vector2(x_input * move_speed, vert_vel);
         }
         else
@@ -84,5 +113,23 @@ public class Player : MonoBehaviour
         //}
         vert_vel = 0;
     }
+    #endregion
+
+    #region Attack_funcs
+    IEnumerator Attack()
+    {
+        yield return new WaitForSeconds(hitboxtiming);
+        RaycastHit2D[] hits = Physics2D.BoxCastAll(PlayerRB.position + cur_direction, Vector2.one, 0f, Vector2.zero);
+
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.transform.CompareTag("Enemy"))
+            {
+                hit.transform.GetComponent<Enemy>().TakeDamage(dmg);
+            }
+        }
+        yield return new WaitForSeconds(hitboxtiming);
+    }
+
     #endregion
 }
